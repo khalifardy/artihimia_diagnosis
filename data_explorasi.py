@@ -165,14 +165,14 @@ dataku = dataku.drop(columns=kolom_homogen)
 kolom_baru = [kolom for kolom in dataku.columns if kolom not in ['diagnosis',
                                                                  'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']]
 skal = Scalling(dataku)
-dataku = skal.standarisasi(kolom_baru)
+dataku1 = skal.normalisasi(kolom_baru)
 # %%
 # korelasi pearson
 nilai_korelasi_pearson = {}
 for kolom in kolom_baru:
     if kolom not in ['diagnosis',
                      'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']:
-        r, p = pearsonr(dataku[kolom], dataku["diagnosis"])
+        r, p = pearsonr(dataku1[kolom], dataku1["diagnosis"])
         nilai_korelasi_pearson[kolom] = [r]
 
 nilai_korelasi_data_frame_pearson = pd.DataFrame(nilai_korelasi_pearson)
@@ -182,15 +182,15 @@ nilai_korelasi_spearman = {}
 for kolom in kolom_baru:
     if kolom not in ['diagnosis',
                      'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']:
-        rho, p = spearmanr(dataku[kolom], dataku["diagnosis"])
+        rho, p = spearmanr(dataku1[kolom], dataku1["diagnosis"])
         nilai_korelasi_spearman[kolom] = [rho]
 
 
 nilai_korelasi_data_frame_spearman = pd.DataFrame(nilai_korelasi_spearman)
 
 # %%
-dataku[kolom_baru] = dataku[kolom_baru].astype(float)
+dataku1[kolom_baru] = dataku1[kolom_baru].astype(float)
 # %%
-dataku.to_csv('feature_data_arythimia.csv', index=False)
+dataku1.to_csv('feature_data_arythimia_norm.csv')
 
 # %%
