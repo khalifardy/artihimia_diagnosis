@@ -5,7 +5,9 @@ from matplotlib import pyplot as plt
 from statsmodels.graphics.gofplots import qqplot
 import seaborn as sns
 import scipy.stats as stats
+from scipy.stats import pearsonr, spearmanr
 from library_project.metode import Regresi
+from library_project.preprocessing import Scalling
 sns.set()
 
 # %%
@@ -16,19 +18,19 @@ dataku = pd.read_csv("arrhythmia.csv")
 list_unik = sorted([i for i in dataku['diagnosis'].unique()])
 
 # %%
-# menganti tanda tanya dengan value kosong
-dataku = dataku.replace(to_replace="?", value=None)
-# %%
-# menghimpun kolom yang tidak full
-kolom_tidak_full = [i for i in dataku.columns if dataku[i].isna().sum() > 0]
-# %%
 # Mendapatkan kolom numerik
 kolom_numerik = [i for i in dataku.columns if dataku[i].dtypes != "O"]
 # mendapatkan kolom kategorical
 kolom_ordinal = [i for i in dataku.columns if dataku[i].dtypes == 'O']
+
+# %%
+# menganti tanda tanya dengan value kosong
+dataku = dataku.replace(to_replace="?", value=None)
 # %%
 dataku[kolom_ordinal] = dataku[kolom_ordinal].astype(float)
-
+# %%
+# menghimpun kolom yang tidak full
+kolom_tidak_full = [i for i in dataku.columns if dataku[i].isna().sum() > 0]
 # %%
 # mendapatkan kolom numerik
 kolom_numerik = [i for i in dataku.columns if dataku[i].dtypes != "O"]
@@ -102,13 +104,93 @@ for i in range(5):
 plt.tight_layout()
 plt.show()
 
-# %%
-dataku.to_csv('eda_data_arythimia.csv', index=False)
+
 # %%
 # cek outliers
 semua_kolom = [i for i in dataku.columns if i not in [
     "index", "sex", "diagnosis"]]
 
 # %%
+# Cek outliers
+fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(9, 9))
+row = 0
+col = 0
+for kolom in semua_kolom[270:277]:
+    if col == 3 and row < 4:
+        col = 0
+        row += 1
+
+    ax[row][col].boxplot(dataku[kolom])
+    ax[row][col].set_title(kolom)
+
+    col += 1
+
+plt.show()
+
+
+# %%
+semua_kolom = [i for i in dataku.columns if i != "diagnosis"]
+
+# %%
+fig, ax = plt.subplots(nrows=6, ncols=5, figsize=(30, 30))
+row = 0
+col = 0
+for kolom in semua_kolom[:30]:
+    if col == 5 and row < 6:
+        col = 0
+        row += 1
+
+    ax[row][col].scatter(dataku[kolom], dataku["diagnosis"])
+    ax[row][col].set_title(kolom+" - Diagnosis")
+
+    col += 1
+
+# %%
+
+kolom_stat = [i for i in dataku.columns if i not in [
+    'sex', 'diagnosis', 'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']]
+# cek kolom yang homogen
+kolom_homogen = []
+for kolom in kolom_stat:
+    varians = dataku[kolom].var()
+    if varians < 16:  # karena jumlah klasifikasi total 16
+        kolom_homogen.append(kolom)
+
+# %%
+# drop kolom homogen + tidak relevan
+kolom_homogen.append("sex")
+dataku = dataku.drop(columns=kolom_homogen)
+
+# %%
+kolom_baru = [kolom for kolom in dataku.columns if kolom not in ['diagnosis',
+                                                                 'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']]
+skal = Scalling(dataku)
+dataku = skal.standarisasi(kolom_baru)
+# %%
+# korelasi pearson
+nilai_korelasi_pearson = {}
+for kolom in kolom_baru:
+    if kolom not in ['diagnosis',
+                     'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']:
+        r, p = pearsonr(dataku[kolom], dataku["diagnosis"])
+        nilai_korelasi_pearson[kolom] = [r]
+
+nilai_korelasi_data_frame_pearson = pd.DataFrame(nilai_korelasi_pearson)
+# %%
+# korelasi spearman
+nilai_korelasi_spearman = {}
+for kolom in kolom_baru:
+    if kolom not in ['diagnosis',
+                     'EOR_Rwave', 'EODD_Rwave', 'EOR_Pwave', 'EODD_Pwave', 'EOR_Twave', 'EODD_Twave']:
+        rho, p = spearmanr(dataku[kolom], dataku["diagnosis"])
+        nilai_korelasi_spearman[kolom] = [rho]
+
+
+nilai_korelasi_data_frame_spearman = pd.DataFrame(nilai_korelasi_spearman)
+
+# %%
+dataku[kolom_baru] = dataku[kolom_baru].astype(float)
+# %%
+dataku.to_csv('feature_data_arythimia.csv', index=False)
 
 # %%
