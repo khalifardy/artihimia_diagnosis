@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import math
 sns.set()
 
 
@@ -134,3 +135,157 @@ class KnearestNeighbors:
         plt.xlabel("k value")
         plt.ylabel("accuracy")
         plt.show()
+
+
+class NaiveBayes:
+    def __init__(self, data_train, kolom_y, kelas):
+        self.data_train = data_train
+        self.kolom_y = kolom_y
+        self.kelas = kelas
+
+    def collect_mean(self, kolom_target):
+        record = dict(self.data_train.groupby(
+            self.kolom_y)[kolom_target].count())
+        count = {key: record[key]+1 for key in record.keys()}
+        total = dict(self.data_train.groupby(self.kolom_y)[kolom_target].sum())
+
+        mean = {key: total[key]/count[key] for key in count.keys()}
+
+        return mean
+
+    def collect_std(self, kolom_target, mean):
+        pembilang = 0
+        std = {}
+        for key in mean.keys():
+
+            miu = mean[key]
+            rec = self.data_train[kolom_target].loc[self.data_train[self.kolom_y] == key]
+            for i in range(len(rec)):
+                value = (rec.iloc[i]-miu)**2
+                pembilang += value
+            std[key] = math.sqrt(pembilang/(len(rec)+1))
+
+        return std
+
+    def collect_probablity_y(self):
+        record = dict(self.data_train[self.kolom_y].value_counts())
+        dictio = {key: record[key]+1 for key in record.keys()}
+        for i in dictio.keys():
+            dictio[i] = dictio[i]/(len(self.data_train)+len(self.kolom_y))
+
+        return dictio
+
+    def calculate_probability(self, mean, std, x):
+        pembilang = math.exp(-((x-mean)**2/(2 * std**2)))
+        penyebut = std*math.sqrt(2*math.pi)
+
+        return 1/penyebut*pembilang
+
+    def max_prob(self, dictio):
+        key = [i for i in dictio.keys()]
+        maxi = dictio[key[0]]
+        maxi_id = key[0]
+
+        for keys in key[1:]:
+            if maxi < dictio[keys]:
+                maxi_id = keys
+                maxi = dictio[keys]
+
+        return maxi_id
+
+    def prediksi(self, data_test, truth_colom=None):
+        result = []
+
+        for i in range(len(data_test)):
+            y_prob = self.collect_probablity_y()
+            dict_prob = {}
+            for kolom in data_test.columns:
+                nilai_x = data_test[kolom].iloc[i]
+                mean = self.collect_mean(kolom)
+                std = self.collect_std(kolom, mean)
+
+                for key in y_prob.keys():
+
+                    y_prob[key] *= self.calculate_probability(
+                        mean[key], std[key], nilai_x)
+            dict_prob["id"] = i
+            dict_prob["probabilitas"] = y_prob
+            dict_prob["result"] = self.max_prob(y_prob)
+            if type(truth_colom) != type(None):
+                dict_prob["truth_data"] = truth_colom.iloc[i]
+                print("record_id : {}, prediksi: {}, truth: {}".format(
+                    dict_prob["id"], dict_prob["result"], dict_prob["truth_data"]))
+            result.append(dict_prob)
+
+        return result
+
+    def akurasi(self, TP, TN, FP, FN):
+        return (TP+TN)/(TP+TN+FP+FN)
+
+    def presisi(self, TP, FP):
+        try:
+            return TP/(TP+FP)
+        except:
+            return 0
+
+    def recall(self, TP, FN):
+        try:
+            return TP/(TP+FN)
+        except:
+            return 0
+
+    def confusionMatrix(self, result):
+
+        result_matrix = []
+
+        for kelas in self.kelas:
+
+            TP = 0
+            TN = 0
+            FP = 0
+            FN = 0
+
+            dictio = {}
+            print(kelas)
+
+            for res in result:
+                if res["truth_data"] == kelas and res["truth_data"] == res["result"]:
+
+                    TP += 1
+                elif res["truth_data"] != kelas and res["truth_data"] == res["result"]:
+                    TN += 1
+                elif res["truth_data"] == kelas and res["truth_data"] != res["result"]:
+                    FP += 1
+                elif res["truth_data"] != kelas and res["truth_data"] != res["result"]:
+                    FN += 1
+
+            dictio["kelas"] = kelas
+            dictio["kumpulan"] = [TP, TN, FP, FN]
+            print(dictio["kumpulan"])
+
+            dictio["akurasi"] = self.akurasi(TP, TN, FP, FN)
+            dictio["presisi"] = self.presisi(TP, FP)
+            dictio["recall"] = self.recall(TP, FN)
+            result_matrix.append(dictio)
+
+        return result_matrix
+
+    def cetak_hasil(self, data_test, truth_colom=None):
+        hasil = self.prediksi(data_test, truth_colom)
+        matrix = self.confusionMatrix(hasil)
+
+        akurasi = 0
+        presisi = 0
+        recall = 0
+
+        for data in matrix:
+            akurasi += data["akurasi"]
+            presisi += data["presisi"]
+            recall += data["recall"]
+
+        akurasi = akurasi / len(self.kelas)
+        presisi = presisi / len(self.kelas)
+        recall = recall / len(self.kelas)
+
+        print("akurasi: {}, presisi: {}, recall: {}".format(
+            akurasi, presisi, recall))
