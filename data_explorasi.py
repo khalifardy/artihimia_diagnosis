@@ -111,7 +111,7 @@ semua_kolom = [i for i in dataku.columns if i not in [
     "index", "sex", "diagnosis"]]
 
 # %%
-# Cek outliers
+# Cek outliers bisa dicek untuk cek kategorikal
 fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(9, 9))
 row = 0
 col = 0

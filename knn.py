@@ -29,7 +29,7 @@ akurasi_manha = knn.evaluasi("manhattan", train1, test1, "diagnosis", k=15)
 # rata-rata akurasi
 list_data = [data1, data2, data4]
 knn.get_average_accuracy(
-    "euclidean", list_data, "diagnosis", 15, True)
+    "euclidean", list_data, "diagnosis", 7, True)
 
 
 # %%

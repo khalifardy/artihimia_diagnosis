@@ -163,7 +163,7 @@ class NaiveBayes:
             for i in range(len(rec)):
                 value = (rec.iloc[i]-miu)**2
                 pembilang += value
-            std[key] = math.sqrt(pembilang/(len(rec)+1))
+            std[key] = math.sqrt(pembilang/(len(rec)+len(rec)))
 
         return std
 
@@ -272,7 +272,9 @@ class NaiveBayes:
 
     def cetak_hasil(self, data_test, truth_colom=None):
         hasil = self.prediksi(data_test, truth_colom)
+
         matrix = self.confusionMatrix(hasil)
+        print(matrix)
 
         akurasi = 0
         presisi = 0
@@ -280,6 +282,7 @@ class NaiveBayes:
 
         for data in matrix:
             akurasi += data["akurasi"]
+
             presisi += data["presisi"]
             recall += data["recall"]
 
